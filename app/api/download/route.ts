@@ -25,6 +25,18 @@ function sanitizeFilename(name: string): string {
   )
 }
 
+function getCookieFlag(): string {
+  const cookiesEnv = process.env.YOUTUBE_COOKIES
+  if (!cookiesEnv) return ''
+  try {
+    const cookiePath = path.join(os.tmpdir(), 'yt_cookies.txt')
+    fs.writeFileSync(cookiePath, cookiesEnv, 'utf-8')
+    return `--cookies "${cookiePath}"`
+  } catch {
+    return ''
+  }
+}
+
 export async function POST(request: NextRequest) {
   const tmpDir = path.join(os.tmpdir(), `ripwave_${randomUUID()}`)
 
@@ -39,6 +51,7 @@ export async function POST(request: NextRequest) {
     fs.mkdirSync(tmpDir, { recursive: true })
 
     const outputTemplate = path.join(tmpDir, '%(title)s.%(ext)s')
+    const cookieFlag = getCookieFlag()
 
     let formatArg = ''
     if (ext === 'mp3' || formatId.includes('bestaudio')) {
@@ -48,7 +61,8 @@ export async function POST(request: NextRequest) {
     } else {
       formatArg = `-f "${formatId}+bestaudio[ext=m4a]/${formatId}+bestaudio/bestvideo+bestaudio/best" --merge-output-format mp4`
     }
-    const command = `${YTDLP} ${formatArg} --ffmpeg-location ${FFMPEG} --no-playlist --no-check-certificates --extractor-retries 3 --socket-timeout 30 -o "${outputTemplate}" "${url.replace(/"/g, '\\"')}"`
+
+    const command = `${YTDLP} ${formatArg} --ffmpeg-location ${FFMPEG} --no-playlist --no-check-certificates --extractor-retries 3 --socket-timeout 30 ${cookieFlag} -o "${outputTemplate}" "${url.replace(/"/g, '\\"')}"`
 
     console.log('Running:', command)
 
@@ -75,7 +89,7 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error) {
-    try { fs.rmSync(tmpDir, { recursive: true, force: true }) } catch { }
+    try { fs.rmSync(tmpDir, { recursive: true, force: true }) } catch {}
 
     console.error('Download error:', error)
     const message = error instanceof Error ? error.message : 'Unknown error'

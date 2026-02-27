@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import path from 'path'
+import fs from 'fs'
+import os from 'os'
 
 const execAsync = promisify(exec)
 
@@ -20,6 +22,20 @@ function isValidYouTubeUrl(url: string): boolean {
   }
 }
 
+function getCookieFlag(): string {
+  const cookiesEnv = process.env.YOUTUBE_COOKIES
+  if (!cookiesEnv) return ''
+  try {
+    const cookiePath = path.join(os.tmpdir(), 'yt_cookies.txt')
+    fs.writeFileSync(cookiePath, cookiesEnv, 'utf-8')
+    console.log('Cookies written to:', cookiePath)
+    return `--cookies "${cookiePath}"`
+  } catch (e) {
+    console.error('Failed to write cookies:', e)
+    return ''
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -35,21 +51,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Please enter a valid YouTube URL' }, { status: 400 })
     }
 
-    // Check yt-dlp exists
-    try {
-      const { stdout: ver } = await execAsync(`${YTDLP} --version`)
-      console.log('yt-dlp OK:', ver.trim())
-    } catch (e) {
-      console.error('yt-dlp not found at:', YTDLP)
-      return NextResponse.json(
-        { error: `yt-dlp not found at: ${YTDLP}. Error: ${e}` },
-        { status: 500 }
-      )
-    }
-    const command = `${YTDLP} --dump-json --no-playlist --no-check-certificates --extractor-retries 3 --socket-timeout 30 -f best "${trimmedUrl.replace(/"/g, '\\"')}"`
+    const cookieFlag = getCookieFlag()
+    console.log('Cookie flag:', cookieFlag ? 'SET' : 'NOT SET')
 
-    const { stdout, stderr } = await execAsync(command, { timeout: 25000 })
-    console.log('stderr:', stderr)
+    const command = `${YTDLP} --dump-json --no-playlist --no-check-certificates --extractor-retries 3 --socket-timeout 30 ${cookieFlag} "${trimmedUrl.replace(/"/g, '\\"')}" 2>&1`
+
+    console.log('Running yt-dlp...')
+
+    const { stdout } = await execAsync(command, { timeout: 25000 })
 
     if (!stdout || stdout.trim() === '') {
       throw new Error('No data returned from yt-dlp')
@@ -139,9 +148,7 @@ export async function POST(request: NextRequest) {
     const videoInfo = {
       id: data.id,
       title: data.title,
-      thumbnail:
-        data.thumbnail ||
-        `https://img.youtube.com/vi/${data.id}/maxresdefault.jpg`,
+      thumbnail: data.thumbnail || `https://img.youtube.com/vi/${data.id}/maxresdefault.jpg`,
       duration: data.duration,
       durationString: data.duration_string,
       viewCount: data.view_count,
