@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { exec } from 'child_process'
 import { promisify } from 'util'
+import path from 'path'
 
 const execAsync = promisify(exec)
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
 
-const YTDLP = './bin/yt-dlp'
+const YTDLP = path.join(process.cwd(), 'bin', 'yt-dlp')
 
 function isValidYouTubeUrl(url: string): boolean {
   try {
@@ -23,14 +24,6 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { url } = body
-        // DEBUG: check if yt-dlp exists
-    try {
-      const { stdout: version } = await execAsync(`${YTDLP} --version`)
-      console.log('yt-dlp version:', version)
-    } catch (e) {
-      console.error('yt-dlp not found at', YTDLP, e)
-      return NextResponse.json({ error: `yt-dlp not found at ${YTDLP}` }, { status: 500 })
-    }
 
     if (!url || typeof url !== 'string') {
       return NextResponse.json({ error: 'URL is required' }, { status: 400 })
@@ -42,11 +35,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Please enter a valid YouTube URL' }, { status: 400 })
     }
 
-    const command = `${YTDLP} --dump-json --no-playlist "${trimmedUrl.replace(/"/g, '\\"')}" 2>&1`
+    // Check yt-dlp exists
+    try {
+      const { stdout: ver } = await execAsync(`${YTDLP} --version`)
+      console.log('yt-dlp OK:', ver.trim())
+    } catch (e) {
+      console.error('yt-dlp not found at:', YTDLP)
+      return NextResponse.json(
+        { error: `yt-dlp not found at: ${YTDLP}. Error: ${e}` },
+        { status: 500 }
+      )
+    }
 
-    const { stdout } = await execAsync(command, {
-      timeout: 25000,
-    })
+    const command = `${YTDLP} --dump-json --no-playlist "${trimmedUrl.replace(/"/g, '\\"')}" 2>&1`
+    console.log('Running:', command)
+
+    const { stdout } = await execAsync(command, { timeout: 25000 })
 
     if (!stdout || stdout.trim() === '') {
       throw new Error('No data returned from yt-dlp')
@@ -81,14 +85,18 @@ export async function POST(request: NextRequest) {
     ]
 
     for (const quality of videoQualities) {
-      const fmt = data.formats?.find((f: { height: number; vcodec: string; acodec: string; ext: string }) =>
-        f.height === quality.height &&
-        f.vcodec !== 'none' &&
-        f.acodec !== 'none' &&
-        f.ext === 'mp4'
-      ) || data.formats?.find((f: { height: number; vcodec: string }) =>
-        f.height === quality.height && f.vcodec !== 'none'
-      )
+      const fmt =
+        data.formats?.find(
+          (f: { height: number; vcodec: string; acodec: string; ext: string }) =>
+            f.height === quality.height &&
+            f.vcodec !== 'none' &&
+            f.acodec !== 'none' &&
+            f.ext === 'mp4'
+        ) ||
+        data.formats?.find(
+          (f: { height: number; vcodec: string }) =>
+            f.height === quality.height && f.vcodec !== 'none'
+        )
 
       if (fmt) {
         formats.push({
@@ -132,7 +140,9 @@ export async function POST(request: NextRequest) {
     const videoInfo = {
       id: data.id,
       title: data.title,
-      thumbnail: data.thumbnail || `https://img.youtube.com/vi/${data.id}/maxresdefault.jpg`,
+      thumbnail:
+        data.thumbnail ||
+        `https://img.youtube.com/vi/${data.id}/maxresdefault.jpg`,
       duration: data.duration,
       durationString: data.duration_string,
       viewCount: data.view_count,
@@ -146,28 +156,19 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(videoInfo)
-
   } catch (error) {
     console.error('Info error:', error)
     const message = error instanceof Error ? error.message : 'Unknown error'
 
-    if (message.includes('not found') || message.includes('No such file')) {
-      return NextResponse.json(
-        { error: 'yt-dlp binary not found. Please check the build script.' },
-        { status: 500 }
-      )
-    }
-
     if (message.includes('Private video') || message.includes('age-restricted')) {
       return NextResponse.json({ error: 'This video is private or age-restricted' }, { status: 403 })
     }
-
     if (message.includes('Video unavailable')) {
       return NextResponse.json({ error: 'This video is unavailable' }, { status: 404 })
     }
 
     return NextResponse.json(
-      { error: 'Failed to fetch video info. Make sure the URL is valid and the video is public.' },
+      { error: `Failed to fetch video info: ${message}` },
       { status: 500 }
     )
   }

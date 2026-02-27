@@ -11,16 +11,18 @@ const execAsync = promisify(exec)
 export const runtime = 'nodejs'
 export const maxDuration = 300
 
-const YTDLP = './bin/yt-dlp'
-const FFMPEG = './bin/ffmpeg'
+const YTDLP = path.join(process.cwd(), 'bin', 'yt-dlp')
+const FFMPEG = path.join(process.cwd(), 'bin', 'ffmpeg')
 
 function sanitizeFilename(name: string): string {
-  return name
-    .replace(/[^\x20-\x7E]/g, '_')
-    .replace(/[/\\?%*:|"<>]/g, '_')
-    .replace(/\s+/g, '_')
-    .replace(/_+/g, '_')
-    .slice(0, 100) || 'ripwave_download'
+  return (
+    name
+      .replace(/[^\x20-\x7E]/g, '_')
+      .replace(/[/\\?%*:|"<>]/g, '_')
+      .replace(/\s+/g, '_')
+      .replace(/_+/g, '_')
+      .slice(0, 100) || 'ripwave_download'
+  )
 }
 
 export async function POST(request: NextRequest) {
@@ -40,9 +42,9 @@ export async function POST(request: NextRequest) {
 
     let formatArg = ''
     if (ext === 'mp3' || formatId.includes('bestaudio')) {
-      formatArg = '-x --audio-format mp3 --audio-quality 0'
+      formatArg = `-x --audio-format mp3 --audio-quality 0`
     } else if (formatId === 'bestvideo+bestaudio/best') {
-      formatArg = '-f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best" --merge-output-format mp4'
+      formatArg = `-f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best" --merge-output-format mp4`
     } else {
       formatArg = `-f "${formatId}+bestaudio[ext=m4a]/${formatId}+bestaudio/bestvideo+bestaudio/best" --merge-output-format mp4`
     }
@@ -61,7 +63,6 @@ export async function POST(request: NextRequest) {
     const downloadedFile = path.join(tmpDir, files[0])
     const fileBuffer = fs.readFileSync(downloadedFile)
     const safeFilename = sanitizeFilename(path.basename(files[0]))
-
     const mimeType = ext === 'mp3' ? 'audio/mpeg' : 'video/mp4'
 
     fs.rmSync(tmpDir, { recursive: true, force: true })
@@ -74,7 +75,6 @@ export async function POST(request: NextRequest) {
         'Cache-Control': 'no-cache',
       },
     })
-
   } catch (error) {
     try { fs.rmSync(tmpDir, { recursive: true, force: true }) } catch {}
 

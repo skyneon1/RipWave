@@ -2,6 +2,6 @@ services:
   - type: web
     name: ripwave
     env: node
-    buildCommand: chmod +x render-build.sh && ./render-build.sh
-    startCommand: npm start
+    buildCommand: npm install && npm run build
+    startCommand: chmod +x start.sh && ./start.sh
     plan: free
