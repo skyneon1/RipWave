@@ -7,7 +7,7 @@ const execAsync = promisify(exec)
 export const runtime = 'nodejs'
 export const maxDuration = 30
 
-const YTDLP = '/opt/render/project/bin/yt-dlp'
+const YTDLP = './bin/yt-dlp'
 
 function isValidYouTubeUrl(url: string): boolean {
   try {

@@ -11,8 +11,8 @@ const execAsync = promisify(exec)
 export const runtime = 'nodejs'
 export const maxDuration = 300
 
-const YTDLP = '/opt/render/project/bin/yt-dlp'
-const FFMPEG = '/opt/render/project/bin/ffmpeg'
+const YTDLP = './bin/yt-dlp'
+const FFMPEG = './bin/ffmpeg'
 
 function sanitizeFilename(name: string): string {
   return name
