@@ -7,6 +7,8 @@ const execAsync = promisify(exec)
 export const runtime = 'nodejs'
 export const maxDuration = 30
 
+const YTDLP = '/opt/render/project/bin/yt-dlp'
+
 function isValidYouTubeUrl(url: string): boolean {
   try {
     const parsed = new URL(url)
@@ -32,10 +34,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Please enter a valid YouTube URL' }, { status: 400 })
     }
 
-    // Fetch video info using yt-dlp
-    const command = `yt-dlp --dump-json --no-playlist "${trimmedUrl.replace(/"/g, '\\"')}" 2>&1`
-    
-    const { stdout, stderr } = await execAsync(command, {
+    const command = `${YTDLP} --dump-json --no-playlist "${trimmedUrl.replace(/"/g, '\\"')}" 2>&1`
+
+    const { stdout } = await execAsync(command, {
       timeout: 25000,
     })
 
@@ -43,7 +44,6 @@ export async function POST(request: NextRequest) {
       throw new Error('No data returned from yt-dlp')
     }
 
-    // Parse the JSON output (take only the first JSON object)
     const lines = stdout.split('\n').filter(line => line.trim().startsWith('{'))
     if (lines.length === 0) {
       throw new Error('Could not parse video information')
@@ -51,7 +51,6 @@ export async function POST(request: NextRequest) {
 
     const data = JSON.parse(lines[0])
 
-    // Extract relevant formats
     const formats: Array<{
       format_id: string
       ext: string
@@ -64,7 +63,6 @@ export async function POST(request: NextRequest) {
       type: 'video' | 'audio'
     }> = []
 
-    // Video formats
     const videoQualities = [
       { height: 2160, label: '4K' },
       { height: 1440, label: '1440p' },
@@ -75,12 +73,12 @@ export async function POST(request: NextRequest) {
     ]
 
     for (const quality of videoQualities) {
-      const fmt = data.formats?.find((f: { height: number; vcodec: string; acodec: string; ext: string }) => 
-        f.height === quality.height && 
-        f.vcodec !== 'none' && 
+      const fmt = data.formats?.find((f: { height: number; vcodec: string; acodec: string; ext: string }) =>
+        f.height === quality.height &&
+        f.vcodec !== 'none' &&
         f.acodec !== 'none' &&
         f.ext === 'mp4'
-      ) || data.formats?.find((f: { height: number; vcodec: string }) => 
+      ) || data.formats?.find((f: { height: number; vcodec: string }) =>
         f.height === quality.height && f.vcodec !== 'none'
       )
 
@@ -98,7 +96,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Audio formats
     const audioFormats = [
       { abr: 320, label: 'MP3 320kbps' },
       { abr: 192, label: 'MP3 192kbps' },
@@ -115,7 +112,6 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // If no specific video formats found, add best/worst options
     if (formats.filter(f => f.type === 'video').length === 0) {
       formats.unshift({
         format_id: 'bestvideo+bestaudio/best',
@@ -137,7 +133,7 @@ export async function POST(request: NextRequest) {
       uploader: data.uploader,
       uploaderUrl: data.uploader_url,
       description: data.description?.slice(0, 300),
-      formats: formats.slice(0, 9), // Limit formats
+      formats: formats.slice(0, 9),
       url: trimmedUrl,
     }
 
@@ -146,14 +142,14 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Info error:', error)
     const message = error instanceof Error ? error.message : 'Unknown error'
-    
-    if (message.includes('yt-dlp') && message.includes('not found')) {
+
+    if (message.includes('not found') || message.includes('No such file')) {
       return NextResponse.json(
-        { error: 'yt-dlp is not installed. Please run: pip install yt-dlp' },
+        { error: 'yt-dlp binary not found. Please check the build script.' },
         { status: 500 }
       )
     }
-    
+
     if (message.includes('Private video') || message.includes('age-restricted')) {
       return NextResponse.json({ error: 'This video is private or age-restricted' }, { status: 403 })
     }

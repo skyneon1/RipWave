@@ -11,10 +11,13 @@ const execAsync = promisify(exec)
 export const runtime = 'nodejs'
 export const maxDuration = 300
 
+const YTDLP = '/opt/render/project/bin/yt-dlp'
+const FFMPEG = '/opt/render/project/bin/ffmpeg'
+
 function sanitizeFilename(name: string): string {
   return name
-    .replace(/[^\x20-\x7E]/g, '_')  // strip non-ASCII (unicode, special chars)
-    .replace(/[/\\?%*:|"<>]/g, '_') // strip chars illegal in headers/filenames
+    .replace(/[^\x20-\x7E]/g, '_')
+    .replace(/[/\\?%*:|"<>]/g, '_')
     .replace(/\s+/g, '_')
     .replace(/_+/g, '_')
     .slice(0, 100) || 'ripwave_download'
@@ -22,10 +25,10 @@ function sanitizeFilename(name: string): string {
 
 export async function POST(request: NextRequest) {
   const tmpDir = path.join(os.tmpdir(), `ripwave_${randomUUID()}`)
-  
+
   try {
     const body = await request.json()
-    const { url, formatId, ext, quality } = body
+    const { url, formatId, ext } = body
 
     if (!url || !formatId) {
       return NextResponse.json({ error: 'URL and format are required' }, { status: 400 })
@@ -34,7 +37,7 @@ export async function POST(request: NextRequest) {
     fs.mkdirSync(tmpDir, { recursive: true })
 
     const outputTemplate = path.join(tmpDir, '%(title)s.%(ext)s')
-    
+
     let formatArg = ''
     if (ext === 'mp3' || formatId.includes('bestaudio')) {
       formatArg = '-x --audio-format mp3 --audio-quality 0'
@@ -44,10 +47,10 @@ export async function POST(request: NextRequest) {
       formatArg = `-f "${formatId}+bestaudio[ext=m4a]/${formatId}+bestaudio/bestvideo+bestaudio/best" --merge-output-format mp4`
     }
 
-    const command = `yt-dlp ${formatArg} --no-playlist -o "${outputTemplate}" "${url.replace(/"/g, '\\"')}"`
-    
+    const command = `${YTDLP} ${formatArg} --ffmpeg-location ${FFMPEG} --no-playlist -o "${outputTemplate}" "${url.replace(/"/g, '\\"')}"`
+
     console.log('Running:', command)
-    
+
     await execAsync(command, { timeout: 240000, maxBuffer: 100 * 1024 * 1024 })
 
     const files = fs.readdirSync(tmpDir)
@@ -58,7 +61,7 @@ export async function POST(request: NextRequest) {
     const downloadedFile = path.join(tmpDir, files[0])
     const fileBuffer = fs.readFileSync(downloadedFile)
     const safeFilename = sanitizeFilename(path.basename(files[0]))
-    
+
     const mimeType = ext === 'mp3' ? 'audio/mpeg' : 'video/mp4'
 
     fs.rmSync(tmpDir, { recursive: true, force: true })
@@ -74,10 +77,10 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     try { fs.rmSync(tmpDir, { recursive: true, force: true }) } catch {}
-    
+
     console.error('Download error:', error)
     const message = error instanceof Error ? error.message : 'Unknown error'
-    
+
     return NextResponse.json(
       { error: `Download failed: ${message}` },
       { status: 500 }
