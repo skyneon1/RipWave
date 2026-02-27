@@ -1,7 +1,10 @@
 #!/bin/bash
 set -e
 
-# Download yt-dlp binary directly
+# Create bin directory
+mkdir -p /opt/render/project/bin
+
+# Download yt-dlp binary
 curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /opt/render/project/bin/yt-dlp
 chmod a+rx /opt/render/project/bin/yt-dlp
 
