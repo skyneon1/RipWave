@@ -11,6 +11,7 @@ export const runtime = 'nodejs'
 export const maxDuration = 30
 
 const YTDLP = path.join(process.cwd(), 'bin', 'yt-dlp')
+const DENO = path.join(process.cwd(), 'bin', 'deno')
 
 function isValidYouTubeUrl(url: string): boolean {
   try {
@@ -27,8 +28,9 @@ function getCookieFlag(): string {
   if (!cookiesEnv) return ''
   try {
     const cookiePath = path.join(os.tmpdir(), 'yt_cookies.txt')
-    fs.writeFileSync(cookiePath, cookiesEnv, 'utf-8')
-    console.log('Cookies written to:', cookiePath)
+    const cookieContent = cookiesEnv.replace(/\\n/g, '\n')
+    fs.writeFileSync(cookiePath, cookieContent, 'utf-8')
+    console.log('Cookie lines:', cookieContent.split('\n').length)
     return `--cookies "${cookiePath}"`
   } catch (e) {
     console.error('Failed to write cookies:', e)
@@ -54,7 +56,7 @@ export async function POST(request: NextRequest) {
     const cookieFlag = getCookieFlag()
     console.log('Cookie flag:', cookieFlag ? 'SET' : 'NOT SET')
 
-    const command = `${YTDLP} --dump-json --no-playlist --no-check-certificates --extractor-retries 3 --socket-timeout 30 ${cookieFlag} "${trimmedUrl.replace(/"/g, '\\"')}" 2>&1`
+    const command = `${YTDLP} --dump-json --no-playlist --no-check-certificates --extractor-retries 3 --socket-timeout 30 --js-runtimes deno:${DENO} ${cookieFlag} "${trimmedUrl.replace(/"/g, '\\"')}" 2>&1`
 
     console.log('Running yt-dlp...')
 
