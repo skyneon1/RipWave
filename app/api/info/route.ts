@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import path from 'path'
-import fs from 'fs'
-import os from 'os'
 
 const execAsync = promisify(exec)
 
@@ -37,7 +35,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Please enter a valid YouTube URL' }, { status: 400 })
     }
 
-    const command = `${YTDLP} --dump-json --no-playlist --no-check-certificates --extractor-args "youtube:player_client=android,web" --socket-timeout 30 "${trimmedUrl.replace(/"/g, '\\"')}" 2>&1`
+    const proxyFlag = process.env.PROXY_URL ? `--proxy "${process.env.PROXY_URL}"` : ''
+    console.log('Proxy:', process.env.PROXY_URL ? 'SET' : 'NOT SET')
+
+    const command = `${YTDLP} --dump-json --no-playlist --no-check-certificates --extractor-args "youtube:player_client=android,web" --socket-timeout 30 ${proxyFlag} "${trimmedUrl.replace(/"/g, '\\"')}" 2>&1`
 
     console.log('Running:', command)
 

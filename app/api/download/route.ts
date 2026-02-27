@@ -39,6 +39,8 @@ export async function POST(request: NextRequest) {
     fs.mkdirSync(tmpDir, { recursive: true })
 
     const outputTemplate = path.join(tmpDir, '%(title)s.%(ext)s')
+    const proxyFlag = process.env.PROXY_URL ? `--proxy "${process.env.PROXY_URL}"` : ''
+    console.log('Proxy:', process.env.PROXY_URL ? 'SET' : 'NOT SET')
 
     let formatArg = ''
     if (ext === 'mp3' || formatId.includes('bestaudio')) {
@@ -49,7 +51,7 @@ export async function POST(request: NextRequest) {
       formatArg = `-f "${formatId}+bestaudio[ext=m4a]/${formatId}+bestaudio/bestvideo+bestaudio/best" --merge-output-format mp4`
     }
 
-    const command = `${YTDLP} ${formatArg} --ffmpeg-location ${FFMPEG} --no-playlist --no-check-certificates --extractor-args "youtube:player_client=android,web" --socket-timeout 30 -o "${outputTemplate}" "${url.replace(/"/g, '\\"')}"`
+    const command = `${YTDLP} ${formatArg} --ffmpeg-location ${FFMPEG} --no-playlist --no-check-certificates --extractor-args "youtube:player_client=android,web" --socket-timeout 30 ${proxyFlag} -o "${outputTemplate}" "${url.replace(/"/g, '\\"')}"`
 
     console.log('Running:', command)
 
