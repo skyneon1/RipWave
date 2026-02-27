@@ -36,11 +36,11 @@ export async function POST(request: NextRequest) {
     }
 
     const proxyFlag = process.env.PROXY_URL ? `--proxy "${process.env.PROXY_URL}"` : ''
-    console.log('Proxy:', process.env.PROXY_URL ? 'SET' : 'NOT SET')
 
-    const command = `${YTDLP} --dump-json --no-playlist --no-check-certificates --extractor-args "youtube:player_client=android,web" --socket-timeout 30 ${proxyFlag} "${trimmedUrl.replace(/"/g, '\\"')}" 2>&1`
+    // Fast flags: skip thumbnails, skip subtitles, no extra requests
+    const command = `${YTDLP} --dump-json --no-playlist --no-check-certificates --no-warnings --extractor-args "youtube:player_client=web,android" --socket-timeout 30 --no-call-home ${proxyFlag} "${trimmedUrl.replace(/"/g, '\\"')}" 2>&1`
 
-    console.log('Running:', command)
+    console.log('Running info...')
 
     const { stdout } = await execAsync(command, { timeout: 25000 })
 
@@ -82,7 +82,6 @@ export async function POST(request: NextRequest) {
           (f: { height: number; vcodec: string; acodec: string; ext: string }) =>
             f.height === quality.height &&
             f.vcodec !== 'none' &&
-            f.acodec !== 'none' &&
             f.ext === 'mp4'
         ) ||
         data.formats?.find(

@@ -18,7 +18,6 @@ if [ ! -f "$BINDIR/ffmpeg" ]; then
   chmod +x "$BINDIR/ffmpeg"
 fi
 
-# Install Deno (JS runtime required by yt-dlp)
 if [ ! -f "$BINDIR/deno" ]; then
   echo "Downloading Deno..."
   curl -L https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip -o /tmp/deno.zip
@@ -26,8 +25,18 @@ if [ ! -f "$BINDIR/deno" ]; then
   chmod +x "$BINDIR/deno"
 fi
 
+# Install aria2c for parallel downloading
+if [ ! -f "$BINDIR/aria2c" ]; then
+  echo "Downloading aria2c..."
+  curl -L https://github.com/q3aql/aria2-static-builds/releases/download/v1.36.0/aria2-1.36.0-linux-gnu-64bit-build1.tar.bz2 -o /tmp/aria2.tar.bz2
+  tar -xf /tmp/aria2.tar.bz2 -C /tmp
+  cp /tmp/aria2-1.36.0-linux-gnu-64bit-build1/aria2c "$BINDIR/aria2c"
+  chmod +x "$BINDIR/aria2c"
+fi
+
 echo "yt-dlp: $($BINDIR/yt-dlp --version)"
 echo "deno: $($BINDIR/deno --version)"
+echo "aria2c: $($BINDIR/aria2c --version | head -1)"
 echo "All binaries ready."
 
 npm start
