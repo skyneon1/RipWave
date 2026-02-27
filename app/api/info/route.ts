@@ -46,11 +46,10 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
+    const command = `${YTDLP} --dump-json --no-playlist --no-check-certificates --extractor-retries 3 --socket-timeout 30 -f best "${trimmedUrl.replace(/"/g, '\\"')}"`
 
-    const command = `${YTDLP} --dump-json --no-playlist "${trimmedUrl.replace(/"/g, '\\"')}" 2>&1`
-    console.log('Running:', command)
-
-    const { stdout } = await execAsync(command, { timeout: 25000 })
+    const { stdout, stderr } = await execAsync(command, { timeout: 25000 })
+    console.log('stderr:', stderr)
 
     if (!stdout || stdout.trim() === '') {
       throw new Error('No data returned from yt-dlp')

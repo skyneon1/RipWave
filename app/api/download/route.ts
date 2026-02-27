@@ -48,8 +48,7 @@ export async function POST(request: NextRequest) {
     } else {
       formatArg = `-f "${formatId}+bestaudio[ext=m4a]/${formatId}+bestaudio/bestvideo+bestaudio/best" --merge-output-format mp4`
     }
-
-    const command = `${YTDLP} ${formatArg} --ffmpeg-location ${FFMPEG} --no-playlist -o "${outputTemplate}" "${url.replace(/"/g, '\\"')}"`
+    const command = `${YTDLP} ${formatArg} --ffmpeg-location ${FFMPEG} --no-playlist --no-check-certificates --extractor-retries 3 --socket-timeout 30 -o "${outputTemplate}" "${url.replace(/"/g, '\\"')}"`
 
     console.log('Running:', command)
 
@@ -76,7 +75,7 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error) {
-    try { fs.rmSync(tmpDir, { recursive: true, force: true }) } catch {}
+    try { fs.rmSync(tmpDir, { recursive: true, force: true }) } catch { }
 
     console.error('Download error:', error)
     const message = error instanceof Error ? error.message : 'Unknown error'
