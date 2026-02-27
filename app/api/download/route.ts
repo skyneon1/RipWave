@@ -30,9 +30,15 @@ function getCookieFlag(): string {
   if (!cookiesEnv) return ''
   try {
     const cookiePath = path.join(os.tmpdir(), 'yt_cookies.txt')
-    fs.writeFileSync(cookiePath, cookiesEnv, 'utf-8')
+    // Fix escaped newlines from environment variable
+    const cookieContent = cookiesEnv.replace(/\\n/g, '\n')
+    fs.writeFileSync(cookiePath, cookieContent, 'utf-8')
+    // Verify file was written correctly
+    const written = fs.readFileSync(cookiePath, 'utf-8')
+    console.log('Cookie file lines:', written.split('\n').length)
     return `--cookies "${cookiePath}"`
-  } catch {
+  } catch (e) {
+    console.error('Failed to write cookies:', e)
     return ''
   }
 }
