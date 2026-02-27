@@ -23,6 +23,14 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { url } = body
+        // DEBUG: check if yt-dlp exists
+    try {
+      const { stdout: version } = await execAsync(`${YTDLP} --version`)
+      console.log('yt-dlp version:', version)
+    } catch (e) {
+      console.error('yt-dlp not found at', YTDLP, e)
+      return NextResponse.json({ error: `yt-dlp not found at ${YTDLP}` }, { status: 500 })
+    }
 
     if (!url || typeof url !== 'string') {
       return NextResponse.json({ error: 'URL is required' }, { status: 400 })

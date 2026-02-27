@@ -9,23 +9,26 @@
   --font-body: 'DM Sans', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  /* Dark Theme variables (default) */
-  --color-bg: #060608;
-  --color-surface: #0e0e12;
-  --color-border: #1e1e28;
-  --color-muted: #3a3a4a;
-  --color-text: #e8e8f0;
-  --color-subtext: #8888a0;
+  /* Theme Colors */
+  --rip-bg: #f8f8fa;
+  --rip-surface: #ffffff;
+  --rip-border: #e2e2e8;
+  --rip-accent: #ff4d1c;
+  --rip-accent-2: #ff8c42;
+  --rip-muted: #d1d1d6;
+  --rip-text: #1a1a1e;
+  --rip-subtext: #636366;
 }
 
-:root[data-theme='light'] {
-  /* Light Theme variables */
-  --color-bg: #f8f8fb;
-  --color-surface: #ffffff;
-  --color-border: #e2e2ea;
-  --color-muted: #d1d1df;
-  --color-text: #1a1a24;
-  --color-subtext: #5a5a72;
+[data-theme='dark'] {
+  --rip-bg: #060608;
+  --rip-surface: #0e0e12;
+  --rip-border: #1e1e28;
+  --rip-accent: #ff4d1c;
+  --rip-accent-2: #ff8c42;
+  --rip-muted: #3a3a4a;
+  --rip-text: #e8e8f0;
+  --rip-subtext: #8888a0;
 }
 
 * {
@@ -37,12 +40,12 @@ html {
 }
 
 body {
-  background-color: var(--color-bg);
-  color: var(--color-text);
+  background-color: var(--rip-bg);
+  color: var(--rip-text);
   font-family: var(--font-body);
+  transition: background-color 0.3s ease, color 0.3s ease;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Scrollbar */
@@ -51,16 +54,16 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--color-bg);
+  background: var(--rip-bg);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border);
+  background: var(--rip-border);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #ff4d1c;
+  background: var(--rip-accent);
 }
 
 /* Selection */
@@ -110,7 +113,7 @@ body {
 
 /* Shimmer loading */
 .shimmer {
-  background: linear-gradient(90deg, var(--color-surface) 25%, var(--color-border) 50%, var(--color-surface) 75%);
+  background: linear-gradient(90deg, var(--rip-surface) 25%, var(--rip-border) 50%, var(--rip-surface) 75%);
   background-size: 200% 100%;
   animation: shimmer 2s linear infinite;
 }

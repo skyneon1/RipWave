@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { ThemeProvider } from './components/ThemeProvider'
 
 export const metadata: Metadata = {
   title: 'Ripwave — Download YouTube Videos Instantly',
@@ -26,8 +27,17 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className="noise">{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <body className="noise">
+        <ThemeProvider
+          attribute="data-theme"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+        </ThemeProvider>
+      </body>
     </html>
   )
 }

@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: 'class',
   content: [
     './pages/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -14,14 +15,14 @@ module.exports = {
       },
       colors: {
         rip: {
-          bg: 'var(--color-bg)',
-          surface: 'var(--color-surface)',
-          border: 'var(--color-border)',
-          accent: '#ff4d1c',
-          'accent-2': '#ff8c42',
-          muted: 'var(--color-muted)',
-          text: 'var(--color-text)',
-          subtext: 'var(--color-subtext)',
+          bg: 'var(--rip-bg)',
+          surface: 'var(--rip-surface)',
+          border: 'var(--rip-border)',
+          accent: 'var(--rip-accent)',
+          'accent-2': 'var(--rip-accent-2)',
+          muted: 'var(--rip-muted)',
+          text: 'var(--rip-text)',
+          subtext: 'var(--rip-subtext)',
         }
       },
       animation: {

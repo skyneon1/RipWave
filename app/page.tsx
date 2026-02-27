@@ -2,13 +2,13 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
-import Reviews from './components/Reviews'
 import {
   Download, Search, Zap, Shield, Clock, Globe,
   Music, Video, ChevronDown, AlertCircle, CheckCircle,
   Loader2, X, Play, Eye, ThumbsUp, User, ExternalLink,
-  Sparkles, Waves, Moon, Sun
+  Sparkles, Waves
 } from 'lucide-react'
+import { ThemeToggle } from './components/ThemeToggle'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface VideoFormat {
@@ -66,26 +66,6 @@ function formatDate(dateStr?: string): string {
 // ─── Components ───────────────────────────────────────────────────────────────
 
 function Navbar() {
-  const [theme, setTheme] = useState<'light' | 'dark'>('dark')
-
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null
-    if (savedTheme) {
-      setTheme(savedTheme)
-      document.documentElement.setAttribute('data-theme', savedTheme)
-    } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
-      setTheme('light')
-      document.documentElement.setAttribute('data-theme', 'light')
-    }
-  }, [])
-
-  const toggleTheme = () => {
-    const newTheme = theme === 'dark' ? 'light' : 'dark'
-    setTheme(newTheme)
-    document.documentElement.setAttribute('data-theme', newTheme)
-    localStorage.setItem('theme', newTheme)
-  }
-
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-12 py-4 border-b border-rip-border/50 backdrop-blur-md bg-rip-bg/80">
       <div className="flex items-center gap-2">
@@ -100,14 +80,8 @@ function Navbar() {
         <a href="#faq" className="hover:text-rip-text transition-colors">FAQ</a>
       </div>
       <div className="flex items-center gap-4">
-        <button
-          onClick={toggleTheme}
-          className="p-2 rounded-full border border-rip-border text-rip-subtext hover:text-rip-text hover:bg-rip-surface transition-all flex items-center justify-center"
-          aria-label="Toggle theme"
-        >
-          {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-        </button>
-        <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-rip-subtext border border-rip-border rounded-full px-3 py-1">
+        <ThemeToggle />
+        <div className="flex items-center gap-2 text-xs font-mono text-rip-subtext border border-rip-border rounded-full px-3 py-1 bg-rip-surface/40">
           <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
           Online
         </div>
@@ -304,7 +278,7 @@ export default function Home() {
                   <button
                     onClick={handleFetchInfo}
                     disabled={!url.trim()}
-                    className="flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-rip-accent to-rip-accent-2 text-white text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-all duration-200 hover:shadow-[0_0_20px_rgba(255,77,28,0.4)] active:scale-95 whitespace-nowrap"
+                    className="flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-rip-accent to-rip-accent-2 text-white text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-all duration-200 hover:shadow-[0_0_20px_rgba(255,77,28,0.4)] active:scale-95"
                   >
                     <Zap size={14} />
                     <span className="hidden sm:inline">Analyze</span>
@@ -348,7 +322,7 @@ export default function Home() {
 
           {/* Stats */}
           {(state === 'idle' || state === 'error') && (
-            <div className="animate-fade-in-up delay-300 flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-xs text-rip-subtext">
+            <div className="animate-fade-in-up delay-300 flex items-center justify-center gap-8 text-xs text-rip-subtext">
               {[
                 { icon: Zap, label: 'Lightning fast' },
                 { icon: Shield, label: 'No account needed' },
@@ -679,8 +653,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      <Reviews />
 
       {/* ── CTA ── */}
       <section className="py-24 px-4 border-t border-rip-border/50">
