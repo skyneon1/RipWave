@@ -25,21 +25,6 @@ function sanitizeFilename(name: string): string {
   )
 }
 
-function getCookieFlag(): string {
-  const cookiesEnv = process.env.YOUTUBE_COOKIES
-  if (!cookiesEnv) return ''
-  try {
-    const cookiePath = path.join(os.tmpdir(), 'yt_cookies.txt')
-    const cookieContent = cookiesEnv.replace(/\\n/g, '\n')
-    fs.writeFileSync(cookiePath, cookieContent, 'utf-8')
-    console.log('Cookie lines:', cookieContent.split('\n').length)
-    return `--cookies "${cookiePath}"`
-  } catch (e) {
-    console.error('Failed to write cookies:', e)
-    return ''
-  }
-}
-
 export async function POST(request: NextRequest) {
   const tmpDir = path.join(os.tmpdir(), `ripwave_${randomUUID()}`)
 
@@ -54,7 +39,6 @@ export async function POST(request: NextRequest) {
     fs.mkdirSync(tmpDir, { recursive: true })
 
     const outputTemplate = path.join(tmpDir, '%(title)s.%(ext)s')
-    const cookieFlag = getCookieFlag()
 
     let formatArg = ''
     if (ext === 'mp3' || formatId.includes('bestaudio')) {
@@ -65,7 +49,7 @@ export async function POST(request: NextRequest) {
       formatArg = `-f "${formatId}+bestaudio[ext=m4a]/${formatId}+bestaudio/bestvideo+bestaudio/best" --merge-output-format mp4`
     }
 
-    const command = `${YTDLP} ${formatArg} --ffmpeg-location ${FFMPEG} --no-playlist --no-check-certificates --extractor-retries 3 --socket-timeout 30 ${cookieFlag} -o "${outputTemplate}" "${url.replace(/"/g, '\\"')}"`
+    const command = `${YTDLP} ${formatArg} --ffmpeg-location ${FFMPEG} --no-playlist --no-check-certificates --extractor-args "youtube:player_client=android,web" --socket-timeout 30 -o "${outputTemplate}" "${url.replace(/"/g, '\\"')}"`
 
     console.log('Running:', command)
 

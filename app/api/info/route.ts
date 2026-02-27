@@ -11,7 +11,6 @@ export const runtime = 'nodejs'
 export const maxDuration = 30
 
 const YTDLP = path.join(process.cwd(), 'bin', 'yt-dlp')
-const DENO = path.join(process.cwd(), 'bin', 'deno')
 
 function isValidYouTubeUrl(url: string): boolean {
   try {
@@ -20,21 +19,6 @@ function isValidYouTubeUrl(url: string): boolean {
     return validHosts.includes(parsed.hostname)
   } catch {
     return false
-  }
-}
-
-function getCookieFlag(): string {
-  const cookiesEnv = process.env.YOUTUBE_COOKIES
-  if (!cookiesEnv) return ''
-  try {
-    const cookiePath = path.join(os.tmpdir(), 'yt_cookies.txt')
-    const cookieContent = cookiesEnv.replace(/\\n/g, '\n')
-    fs.writeFileSync(cookiePath, cookieContent, 'utf-8')
-    console.log('Cookie lines:', cookieContent.split('\n').length)
-    return `--cookies "${cookiePath}"`
-  } catch (e) {
-    console.error('Failed to write cookies:', e)
-    return ''
   }
 }
 
@@ -53,12 +37,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Please enter a valid YouTube URL' }, { status: 400 })
     }
 
-    const cookieFlag = getCookieFlag()
-    console.log('Cookie flag:', cookieFlag ? 'SET' : 'NOT SET')
+    const command = `${YTDLP} --dump-json --no-playlist --no-check-certificates --extractor-args "youtube:player_client=android,web" --socket-timeout 30 "${trimmedUrl.replace(/"/g, '\\"')}" 2>&1`
 
-    const command = `${YTDLP} --dump-json --no-playlist --no-check-certificates --extractor-retries 3 --socket-timeout 30 --js-runtimes deno:${DENO} ${cookieFlag} "${trimmedUrl.replace(/"/g, '\\"')}" 2>&1`
-
-    console.log('Running yt-dlp...')
+    console.log('Running:', command)
 
     const { stdout } = await execAsync(command, { timeout: 25000 })
 
