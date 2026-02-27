@@ -1,0 +1,86 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { exec } from 'child_process'
+import { promisify } from 'util'
+import path from 'path'
+import fs from 'fs'
+import os from 'os'
+import { randomUUID } from 'crypto'
+
+const execAsync = promisify(exec)
+
+export const runtime = 'nodejs'
+export const maxDuration = 300
+
+function sanitizeFilename(name: string): string {
+  return name
+    .replace(/[^\x20-\x7E]/g, '_')  // strip non-ASCII (unicode, special chars)
+    .replace(/[/\\?%*:|"<>]/g, '_') // strip chars illegal in headers/filenames
+    .replace(/\s+/g, '_')
+    .replace(/_+/g, '_')
+    .slice(0, 100) || 'ripwave_download'
+}
+
+export async function POST(request: NextRequest) {
+  const tmpDir = path.join(os.tmpdir(), `ripwave_${randomUUID()}`)
+  
+  try {
+    const body = await request.json()
+    const { url, formatId, ext, quality } = body
+
+    if (!url || !formatId) {
+      return NextResponse.json({ error: 'URL and format are required' }, { status: 400 })
+    }
+
+    fs.mkdirSync(tmpDir, { recursive: true })
+
+    const outputTemplate = path.join(tmpDir, '%(title)s.%(ext)s')
+    
+    let formatArg = ''
+    if (ext === 'mp3' || formatId.includes('bestaudio')) {
+      formatArg = '-x --audio-format mp3 --audio-quality 0'
+    } else if (formatId === 'bestvideo+bestaudio/best') {
+      formatArg = '-f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best" --merge-output-format mp4'
+    } else {
+      formatArg = `-f "${formatId}+bestaudio[ext=m4a]/${formatId}+bestaudio/bestvideo+bestaudio/best" --merge-output-format mp4`
+    }
+
+    const command = `yt-dlp ${formatArg} --no-playlist -o "${outputTemplate}" "${url.replace(/"/g, '\\"')}"`
+    
+    console.log('Running:', command)
+    
+    await execAsync(command, { timeout: 240000, maxBuffer: 100 * 1024 * 1024 })
+
+    const files = fs.readdirSync(tmpDir)
+    if (files.length === 0) {
+      throw new Error('Download failed - no file created')
+    }
+
+    const downloadedFile = path.join(tmpDir, files[0])
+    const fileBuffer = fs.readFileSync(downloadedFile)
+    const safeFilename = sanitizeFilename(path.basename(files[0]))
+    
+    const mimeType = ext === 'mp3' ? 'audio/mpeg' : 'video/mp4'
+
+    fs.rmSync(tmpDir, { recursive: true, force: true })
+
+    return new NextResponse(fileBuffer, {
+      headers: {
+        'Content-Type': mimeType,
+        'Content-Disposition': `attachment; filename="${safeFilename}"`,
+        'Content-Length': fileBuffer.length.toString(),
+        'Cache-Control': 'no-cache',
+      },
+    })
+
+  } catch (error) {
+    try { fs.rmSync(tmpDir, { recursive: true, force: true }) } catch {}
+    
+    console.error('Download error:', error)
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    
+    return NextResponse.json(
+      { error: `Download failed: ${message}` },
+      { status: 500 }
+    )
+  }
+}

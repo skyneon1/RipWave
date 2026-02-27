@@ -1,0 +1,15 @@
+# rename this to .gitignore
+
+node_modules/
+.next/
+out/
+build/
+.DS_Store
+.env
+.env*.local
+*.tsbuildinfo
+next-env.d.ts
+/tmp
+*.mp4
+*.mp3
+*.webm
